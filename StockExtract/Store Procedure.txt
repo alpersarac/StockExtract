@@ -1,0 +1,21 @@
+Create or Alter procedure Get_Stock 
+@ProductCode NVARCHAR(50),
+@StartDate int,
+@EndDate int
+as
+EXEC ('USE [Test];')
+begin
+ 	SELECT 
+	ROW_NUMBER() OVER(ORDER BY (SELECT SI.Tarih)) as 'Sira No',
+	CASE WHEN SI.IslemTur = 0  THEN 'Giris' WHEN SI.IslemTur=1 THEN 'Cikis' END AS IslemTur, 
+	SI.EvrakNo, 
+	CONVERT(VARCHAR(15), CAST(SI.Tarih - 2 AS datetime), 104) AS 'Tarih', 
+	CASE WHEN SI.IslemTur = 0 and SI.Miktar!=0  THEN SI.Miktar ELSE 0 END  AS 'Giris Miktar', 
+	CASE WHEN SI.IslemTur = 1 and SI.Miktar!=0  THEN SI.Miktar ELSE 0 END  AS 'Cikis Miktar'
+	FROM STI AS SI 
+	LEFT JOIN STK AS S on SI.MalKodu=S.MalKodu
+	WHERE CONVERT(VARCHAR(15), CAST(@StartDate - 2 AS datetime), 104)<CONVERT(VARCHAR(15), CAST(SI.Tarih - 2 AS datetime), 104) and CONVERT(VARCHAR(15), CAST(@EndDate - 2 AS datetime), 104)>CONVERT(VARCHAR(15), CAST(SI.Tarih - 2 AS datetime), 104) 
+	AND SI.MalKodu=@ProductCode
+	GROUP BY SI.IslemTur,SI.EvrakNo,SI.Tarih,SI.Miktar, SI.MalKodu 
+	ORDER BY SI.Tarih ASC
+end
